@@ -669,10 +669,11 @@ fn select_difficulty(settings: &mut Settings, theme: &ColorfulTheme) {
         }
         Difficulty::Custom => {
             let size = terminal_size::terminal_size().unwrap();
-            let width: u32 = Input::with_theme(theme)
-                .with_prompt(&format!("Board width (max: {})", size.0 .0 / 3))
-                .validate_with(|x: &u32| {
-                    if *x > size.0 .0 as u32 / 3 {
+            let max_width = ((size.0 .0 / 3) as i32 - settings.bordered as i32).max(1) as u16;
+            let width: u16 = Input::with_theme(theme)
+                .with_prompt(&format!("Board width (max: {})", max_width))
+                .validate_with(|x: &u16| {
+                    if *x > max_width {
                         Err("Width entered exceeds the width of your terminal")
                     } else {
                         Ok(())
@@ -681,10 +682,11 @@ fn select_difficulty(settings: &mut Settings, theme: &ColorfulTheme) {
                 .interact()
                 .unwrap();
             settings.width = width as i32;
-            let height: u32 = Input::with_theme(theme)
-                .with_prompt(&format!("Board height (max: {})", size.1 .0 -2))
-                .validate_with(|x: &u32| {
-                    if *x > size.1 .0 as u32 - 2 {
+            let max_height = (size.1 .0 as i32 - 2 - settings.bordered as i32).max(1) as u16;
+            let height: u16 = Input::with_theme(theme)
+                .with_prompt(&format!("Board height (max: {})", max_height))
+                .validate_with(|x: &u16| {
+                    if *x > max_height{
                         Err("Height entered exceeds the height of your terminal and the instructions")
                     } else {
                         Ok(())
@@ -693,11 +695,12 @@ fn select_difficulty(settings: &mut Settings, theme: &ColorfulTheme) {
                 .interact()
                 .unwrap();
             settings.height = height as i32;
-            let mines: u32 = Input::with_theme(theme)
-                .with_prompt("Mine amount")
-                .validate_with(|x: &u32| {
-                    if *x >= width * height {
-                        Err("Mine amount cannot exceed board area")
+            let max_mines = width * height / 4;
+            let mines: u16 = Input::with_theme(theme)
+                .with_prompt(&format!("Mine amount (max: {})", max_mines))
+                .validate_with(|x: &u16| {
+                    if *x > max_mines {
+                        Err("Too many mines will result in a non playable experience")
                     } else {
                         Ok(())
                     }
