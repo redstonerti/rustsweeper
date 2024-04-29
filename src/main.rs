@@ -562,24 +562,6 @@ fn get_choice_from_user(
 }
 fn get_settings(settings: &mut Settings) {
     let settings_options = vec!["Play", "Difficulty", "Controls", "Appearance", "Exit"];
-    loop {
-        let setting = Select::with_theme(&ColorfulTheme::default())
-            .items(&settings_options)
-            .interact()
-            .unwrap();
-        match setting {
-            0 => break,
-            1 => select_difficulty(settings),
-            2 => select_input_type(settings),
-            3 => get_appearance_settings(settings),
-            4 => exit_gracefully(),
-            _ => {}
-        }
-    }
-}
-fn get_appearance_settings(settings: &mut Settings) {
-    let appearance_options = vec!["Centered", "Bordered"];
-    let defaults = vec![settings.centered, settings.bordered];
     let mut theme = ColorfulTheme::default();
     theme.defaults_style = dialoguer::console::Style::new().red();
     let green_style = dialoguer::console::Style::new().green().bold();
@@ -588,7 +570,25 @@ fn get_appearance_settings(settings: &mut Settings) {
     let unchecked_item_prefix = black_style.apply_to("☐".to_owned());
     theme.checked_item_prefix = checked_item_prefix;
     theme.unchecked_item_prefix = unchecked_item_prefix;
-    let appearance = MultiSelect::with_theme(&theme)
+    loop {
+        let setting = Select::with_theme(&theme)
+            .items(&settings_options)
+            .interact()
+            .unwrap();
+        match setting {
+            0 => break,
+            1 => select_difficulty(settings, &theme),
+            2 => select_input_type(settings, &theme),
+            3 => get_appearance_settings(settings, &theme),
+            4 => exit_gracefully(),
+            _ => {}
+        }
+    }
+}
+fn get_appearance_settings(settings: &mut Settings, theme: &ColorfulTheme) {
+    let appearance_options = vec!["Centered", "Bordered"];
+    let defaults = vec![settings.centered, settings.bordered];
+    let appearance = MultiSelect::with_theme(theme)
         .items(&appearance_options)
         .defaults(&defaults)
         .interact()
@@ -623,9 +623,9 @@ fn center_board(settings: &mut Settings) {
         }
     }
 }
-fn select_input_type(settings: &mut Settings) {
+fn select_input_type(settings: &mut Settings, theme: &ColorfulTheme) {
     let input_options = vec!["Mouse", "Keyboard"]; //Todo Add Custom diffiuclty
-    let input_type = Select::with_theme(&ColorfulTheme::default())
+    let input_type = Select::with_theme(theme)
         .with_prompt("Select Input Type")
         .items(&input_options)
         .interact()
@@ -637,9 +637,9 @@ fn select_input_type(settings: &mut Settings) {
     };
     settings.input_type = input_type;
 }
-fn select_difficulty(settings: &mut Settings) {
+fn select_difficulty(settings: &mut Settings, theme: &ColorfulTheme) {
     let difficulty_options = vec!["Easy", "Normal", "Hard", "Custom"]; //Todo Add Custom diffiuclty
-    let difficulty = Select::with_theme(&ColorfulTheme::default())
+    let difficulty = Select::with_theme(theme)
         .with_prompt("Select Difficulty")
         .items(&difficulty_options)
         .interact()
@@ -669,7 +669,7 @@ fn select_difficulty(settings: &mut Settings) {
         }
         Difficulty::Custom => {
             let size = terminal_size::terminal_size().unwrap();
-            let width: u32 = Input::with_theme(&ColorfulTheme::default())
+            let width: u32 = Input::with_theme(theme)
                 .with_prompt(&format!("Board width (max: {})", size.0 .0 / 3))
                 .validate_with(|x: &u32| {
                     if *x > size.0 .0 as u32 / 3 {
@@ -681,7 +681,7 @@ fn select_difficulty(settings: &mut Settings) {
                 .interact()
                 .unwrap();
             settings.width = width as i32;
-            let height: u32 = Input::with_theme(&ColorfulTheme::default())
+            let height: u32 = Input::with_theme(theme)
                 .with_prompt(&format!("Board height (max: {})", size.1 .0 -2))
                 .validate_with(|x: &u32| {
                     if *x > size.1 .0 as u32 - 2 {
@@ -693,7 +693,7 @@ fn select_difficulty(settings: &mut Settings) {
                 .interact()
                 .unwrap();
             settings.height = height as i32;
-            let mines: u32 = Input::with_theme(&ColorfulTheme::default())
+            let mines: u32 = Input::with_theme(theme)
                 .with_prompt("Mine amount")
                 .validate_with(|x: &u32| {
                     if *x >= width * height {
@@ -707,6 +707,7 @@ fn select_difficulty(settings: &mut Settings) {
             settings.mines = mines as i32;
         }
     };
+    center_board(settings);
 }
 fn exit_gracefully() {
     disable_raw_mode().unwrap();
